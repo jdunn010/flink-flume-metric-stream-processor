@@ -7,6 +7,6 @@ public class CloudWatchLogEvent extends Event {
 
     @Override
     public long getTimestamp() {
-        return 0;
+        return timestamp;
     }
 }

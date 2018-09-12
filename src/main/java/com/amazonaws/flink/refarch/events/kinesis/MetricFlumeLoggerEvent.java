@@ -48,27 +48,11 @@ public class MetricFlumeLoggerEvent extends Event {
     public class Evt {
         public Map val;
         public String type;
-
-        @Override
-        public String toString() {
-            return "Evt{" +
-                    "val=" + val +
-                    ", type='" + type + '\'' +
-                    '}';
-        }
     }
 
     public class Event {
         public Map val;
         public String type;
-
-        @Override
-        public String toString() {
-            return "Event{" +
-                    "val=" + val +
-                    ", type='" + type + '\'' +
-                    '}';
-        }
     }
 
 

@@ -43,13 +43,6 @@ public abstract class Event {
     public static CloudWatchLogEvent[] parseEvent(byte[] event) {
         String eventContentsString = "";
         try {
-            //System.out.println("eventContentsString = " + )); ;
-            //parse the event payload and remove the type attribute
-            //byte[] decodeBytes = Base64.getDecoder().decode(decompress(event));
-            //byte[] decompressedBytes = decompress(decodeBytes);
-            //eventContentsString = new String(decompress(event));
-
-            //int indexOfMetricToken = eventContentsString.indexOf("METRIC\n");
             InputStreamReader eventStreamReader = new InputStreamReader(new ByteArrayInputStream(decompress(event)));
             JsonReader jsonReader = new JsonReader(eventStreamReader);
 
@@ -59,7 +52,6 @@ public abstract class Event {
             return events;
 
         } catch (Exception e) {
-            //e.printStackTrace();
             throw new RuntimeException("incoming event " + eventContentsString, e);
         }
     }

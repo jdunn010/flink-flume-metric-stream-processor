@@ -92,7 +92,6 @@ public class ElasticsearchJestSink<T> extends RichSinkFunction<T> implements Che
 
         //send the bulk index to Elasticsearch
         jestClient.execute(bulkIndexBuilder.build());   //FIXME: iterate through response and handle failures of single actions to obtain at least once semantics
-        //System.out.println("flushing document buffer on Sink");
         documentBuffer.clear();
         lastBufferFlush = System.currentTimeMillis();
     }
@@ -101,7 +100,6 @@ public class ElasticsearchJestSink<T> extends RichSinkFunction<T> implements Che
     @Override
     public void open(Configuration configuration) {
         ParameterTool params = ParameterTool.fromMap(userConfig);
-        System.out.println("opening SINK");
         final Supplier<LocalDateTime> clock = () -> LocalDateTime.now(ZoneOffset.UTC);
         final AWSCredentialsProvider credentialsProvider = new DefaultAWSCredentialsProviderChain();
         //todo final AWSSigner awsSigner = new AWSSigner(credentialsProvider, params.getRequired("region"), ES_SERVICE_NAME, clock);

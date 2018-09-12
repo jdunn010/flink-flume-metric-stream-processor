@@ -40,7 +40,6 @@ public class ProcessFlumeMetricsStream {
     private static final String DEFAULT_REGION = "us-west-1";
     private static final String ES_DEFAULT_INDEX = "metrics-dashboard";
     private static final Logger LOG = LoggerFactory.getLogger(ProcessFlumeMetricsStream.class);
-    private static final String DEFAULT_ES_ENDPOINT = "https://search-x1a-emr-elasti-cmps5vg099ke-nwk2byrmfp3czsukf464onzqlm.us-west-1.es.amazonaws.com";
 
     public static void main(String[] args) throws Exception {
         ParameterTool parameterTool = ParameterTool.fromArgs(args);
@@ -64,33 +63,27 @@ public class ProcessFlumeMetricsStream {
                 new EventSchema(),
                 kinesisConsumerConfig)
         );
-        System.out.println("PPPPPPP");
         DataStream<MetricFlumeLoggerEvent> launchMetricEvents = kinesisStream
                 .rebalance()
                 .flatMap(new Splitter())
                 //.assignTimestampsAndWatermarks(new PunctuatedAssigner<Event>())
                 .filter(event -> MetricFlumeLoggerEvent.class.isAssignableFrom(event.getClass()))
-                .map(event -> (MetricFlumeLoggerEvent) event)
+                .map(event -> event)
                 .filter(MetricEventUtils::isLaunchMetric);
-        System.out.println("LLLLLLL");
         DataStream<LaunchMetricDuration> durations = launchMetricEvents
                 .map((MapFunction<MetricFlumeLoggerEvent, LaunchMetricDuration>) metricFlumeLoggerEvent ->
                         new LaunchMetricDuration(metricFlumeLoggerEvent.ts,
                                 (String) metricFlumeLoggerEvent.event.val.get("segment"),
                                 metricFlumeLoggerEvent.elapsedTime));
-        System.out.println("KKKKK");
 
-        //if (parameterTool.has("es-endpoint")) {
         final String indexName = parameterTool.get("es-index", ES_DEFAULT_INDEX);
 
         final ImmutableMap<String, String> config = ImmutableMap.<String, String>builder()
-                .put("es-endpoint", parameterTool.get("es-endpoint", DEFAULT_ES_ENDPOINT))
+                .put("es-endpoint", parameterTool.getRequired("es-endpoint"))
                 .put("region", parameterTool.get("region", DEFAULT_REGION))
                 .build();
 
         durations.addSink(new ElasticsearchJestSink<>(config, indexName, "launch_metric"));
-        //}
-        System.out.println("Starting to consume events from stream ");
         LOG.info("Starting to consume events from stream {}", "x1answers-log-metrics-stream-norcal");
 
         env.execute();
@@ -99,17 +92,15 @@ public class ProcessFlumeMetricsStream {
     public static class Splitter implements FlatMapFunction<CloudWatchLogEvent[], MetricFlumeLoggerEvent> {
         @Override
         public void flatMap(CloudWatchLogEvent[] logEvents, Collector<MetricFlumeLoggerEvent> out) throws Exception {
-            //System.out.println("splitter=" + logEvents.length);
             for (CloudWatchLogEvent logEvent : logEvents) {
                 String message = logEvent.message;
                 int indexOfMetricToken = message.indexOf("METRIC ");
                 String jsonContent = message.substring(indexOfMetricToken + 7);
                 try {
                     MetricFlumeLoggerEvent metricFlumeLoggerEvent = gson.fromJson(jsonContent, MetricFlumeLoggerEvent.class);
-                    //System.out.println("jsonContent = " + jsonContent);
                     out.collect(metricFlumeLoggerEvent);
                 } catch (RuntimeException e) {
-                    //System.out.println("failed message = " + message);
+                    //ok to ignore unknown types
                     //throw e;
                 }
             }
